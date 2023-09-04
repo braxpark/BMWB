@@ -24,7 +24,7 @@ pub fn WebServer() type {
 
             if (options.run_mode == RunMode.Local) {
                 const portString = try std.fmt.allocPrint(options.allocator, "{any}", .{options.port});
-                const authority = std.mem.concat(options.allocator, u8, &.{ options.address, portString });
+                const authority = try std.mem.concat(options.allocator, u8, &.{ options.address, "/", portString });
                 print("\n\nRunning development server at: {s}\n", .{authority});
             }
             const address = try std.net.Address.parseIp(options.address, options.port);

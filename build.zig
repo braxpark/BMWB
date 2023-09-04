@@ -19,6 +19,4 @@ pub fn build(b: *std.build.Builder) void {
     }
     const run_step = b.step("run", "Run this simulation");
     run_step.dependOn(&run_cmd.step);
-
-    b.default_step = run_step;
 }
