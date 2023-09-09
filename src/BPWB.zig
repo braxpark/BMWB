@@ -24,7 +24,7 @@ pub fn WebServer() type {
 
             if (options.run_mode == RunMode.Local) {
                 const portString = try std.fmt.allocPrint(options.allocator, "{any}", .{options.port});
-                const authority = try std.mem.concat(options.allocator, u8, &.{ options.address, "/", portString });
+                const authority = try std.mem.concat(options.allocator, u8, &.{ options.address, ":", portString });
                 print("\n\nRunning development server at: {s}\n", .{authority});
             }
             const address = try std.net.Address.parseIp(options.address, options.port);
@@ -45,42 +45,59 @@ pub fn WebServer() type {
             _ = params;
 
             // do server logic conditionally based on the params
-
             var path_split_iterator: std.mem.SplitBackwardsIterator(u8, .scalar) = std.mem.splitBackwardsScalar(u8, path, '/');
             // if .css or .ico or .js, etc... what other features should we support?
             var last_path: []const u8 = path_split_iterator.first();
-            const last_path_len = last_path.len;
-            const supported_feature = std.mem.eql(u8, last_path[last_path_len - 3 .. last_path_len], "css") or std.mem.eql(u8, last_path[last_path_len - 2 .. last_path_len], "js");
-            const is_valid_dir_path = !std.mem.containsAtLeast(u8, last_path, 1, ".");
 
-            const adjusted_path = try std.mem.concat(options.allocator, u8, &.{ "src", path });
+            // Client send GET request given the url:port/target
+            // target = path + params
+            // if server returns html
+            //      - client then requests from the server:
+            //          - js
+            //          - css
+            //          - favicon.ico
+            //
+            //
+            //      localhost:3000/foo/bar
+            //          if server returns *.html that has a js and css file linked
+            //              - client will send a get request to localhost:3000/foo/bar/*.js, etc
+            //      Therefore a specification is needed to handle this:
+            //          - define a protocol to address get requests for javascript and css files
+
+            const js_dir = "scripts/";
+            const css_dir = "styles/";
             var file_content: anyerror![]u8 = "";
-            if (supported_feature) {
-                const css_path = try std.mem.concat(options.allocator, u8, &.{ "src/styles/", last_path });
-                if (std.mem.eql(u8, last_path[last_path_len - 3 .. last_path_len], "css")) {
-                    //css
+            if (std.mem.containsAtLeast(u8, last_path, 1, ".")) {
+                //  ex. any resource from a GET from the browser
+                // conditional on if path is non empty and last split slice contains a .
+                //
+                //  localhost:3000/foo/bar/jasdf.oop.foo.css
+                var last_split_iterator: std.mem.SplitBackwardsIterator(u8, .scalar) = std.mem.splitBackwardsScalar(u8, path, '.');
+                const extension: []const u8 = last_split_iterator.first();
+                if (std.mem.eql(u8, extension, "js")) {
+                    const js_path = try std.mem.concat(options.allocator, u8, &.{ js_dir, last_path });
+                    file_content = try std.fs.cwd().readFileAlloc(options.allocator, js_path, std.math.maxInt(usize));
+                    try response.headers.append("Content-Type", "text/javascript");
+                } else if (std.mem.eql(u8, extension, "css")) {
+                    const css_path = try std.mem.concat(options.allocator, u8, &.{ css_dir, last_path });
                     file_content = try std.fs.cwd().readFileAlloc(options.allocator, css_path, std.math.maxInt(usize));
                     try response.headers.append("Content-Type", "text/css");
-                } else {
-                    // js
-                    try response.headers.append("Content-Type", "text/javascript");
                 }
-            } else if (is_valid_dir_path) {
-                const html_path = try std.mem.concat(options.allocator, u8, &.{ adjusted_path, "/index.html" });
-                const currentDir = std.fs.cwd();
-                file_content = currentDir.readFileAlloc(options.allocator, html_path, std.math.maxInt(usize));
+            } else {
+                try response.headers.append("Content-Type", "text/html");
+                const server_path_prefix = try std.mem.concat(options.allocator, u8, &.{ "pages", path });
+                const requested_html = try std.mem.concat(options.allocator, u8, &.{ server_path_prefix, "/index.html" });
+                file_content = std.fs.cwd().readFileAlloc(options.allocator, requested_html, std.math.maxInt(usize));
                 if (file_content) |fileContent| {
                     _ = fileContent;
                 } else |err| {
                     if (err == error.FileNotFound)
-                        file_content = try std.fs.cwd().readFileAlloc(options.allocator, "src/util/pageNotFound.html", std.math.maxInt(usize));
+                        file_content = std.fs.cwd().readFileAlloc(options.allocator, "util/pageNotFound.html", std.math.maxInt(usize));
                 }
-                try response.headers.append("Content-Type", "text/html");
-            } else {
-                //handle bad request scenario
-                file_content = try std.fs.cwd().readFileAlloc(options.allocator, "src/util/pageNotFound.html", std.math.maxInt(usize));
-                try response.headers.append("Content-Type", "text/html");
             }
+            //
+            //
+            //
 
             if (file_content) |file| {
                 const len = try std.fmt.allocPrint(options.allocator, "{any}", .{file.len});

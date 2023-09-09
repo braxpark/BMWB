@@ -1,0 +1,11 @@
+div {
+    color: red;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+#blog {
+    color: green;
+}
