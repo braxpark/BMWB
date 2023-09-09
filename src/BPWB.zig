@@ -67,6 +67,7 @@ pub fn WebServer() type {
             const js_dir = "scripts/";
             const css_dir = "styles/";
             var file_content: anyerror![]u8 = "";
+            var content_type: []const u8 = "";
             if (std.mem.containsAtLeast(u8, last_path, 1, ".")) {
                 //  ex. any resource from a GET from the browser
                 // conditional on if path is non empty and last split slice contains a .
@@ -76,15 +77,15 @@ pub fn WebServer() type {
                 const extension: []const u8 = last_split_iterator.first();
                 if (std.mem.eql(u8, extension, "js")) {
                     const js_path = try std.mem.concat(options.allocator, u8, &.{ js_dir, last_path });
-                    file_content = try std.fs.cwd().readFileAlloc(options.allocator, js_path, std.math.maxInt(usize));
-                    try response.headers.append("Content-Type", "text/javascript");
+                    file_content = std.fs.cwd().readFileAlloc(options.allocator, js_path, std.math.maxInt(usize));
+                    content_type = "text/javascript";
                 } else if (std.mem.eql(u8, extension, "css")) {
                     const css_path = try std.mem.concat(options.allocator, u8, &.{ css_dir, last_path });
-                    file_content = try std.fs.cwd().readFileAlloc(options.allocator, css_path, std.math.maxInt(usize));
-                    try response.headers.append("Content-Type", "text/css");
+                    file_content = std.fs.cwd().readFileAlloc(options.allocator, css_path, std.math.maxInt(usize));
+                    content_type = "text/css";
                 }
             } else {
-                try response.headers.append("Content-Type", "text/html");
+                content_type = "text/html";
                 const server_path_prefix = try std.mem.concat(options.allocator, u8, &.{ "pages", path });
                 const requested_html = try std.mem.concat(options.allocator, u8, &.{ server_path_prefix, "/index.html" });
                 file_content = std.fs.cwd().readFileAlloc(options.allocator, requested_html, std.math.maxInt(usize));
@@ -95,6 +96,7 @@ pub fn WebServer() type {
                         file_content = std.fs.cwd().readFileAlloc(options.allocator, "util/pageNotFound.html", std.math.maxInt(usize));
                 }
             }
+            try response.headers.append("Content-Type", content_type);
             //
             //
             //
