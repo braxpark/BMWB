@@ -34,45 +34,21 @@ pub fn WebServer() type {
         }
 
         fn handle_get_request(response: *std.http.Server.Response) !void {
-
-            // match to explicit specification
-            // if no match, then return generic page not found
-
             const target = response.request.target;
             var param_split_iterator: std.mem.SplitIterator(u8, .scalar) = std.mem.splitScalar(u8, target, '?');
             var path: []const u8 = param_split_iterator.first(); // this gets everything up until the first '?', so if no '?' exists, then its still OK
             var params: ?[]const u8 = param_split_iterator.next(); // gets param if exits
             _ = params;
 
-            // do server logic conditionally based on the params
             var path_split_iterator: std.mem.SplitBackwardsIterator(u8, .scalar) = std.mem.splitBackwardsScalar(u8, path, '/');
             // if .css or .ico or .js, etc... what other features should we support?
             var last_path: []const u8 = path_split_iterator.first();
-
-            // Client send GET request given the url:port/target
-            // target = path + params
-            // if server returns html
-            //      - client then requests from the server:
-            //          - js
-            //          - css
-            //          - favicon.ico
-            //
-            //
-            //      localhost:3000/foo/bar
-            //          if server returns *.html that has a js and css file linked
-            //              - client will send a get request to localhost:3000/foo/bar/*.js, etc
-            //      Therefore a specification is needed to handle this:
-            //          - define a protocol to address get requests for javascript and css files
 
             const js_dir = "scripts/";
             const css_dir = "styles/";
             var file_content: anyerror![]u8 = "";
             var content_type: []const u8 = "";
             if (std.mem.containsAtLeast(u8, last_path, 1, ".")) {
-                //  ex. any resource from a GET from the browser
-                // conditional on if path is non empty and last split slice contains a .
-                //
-                //  localhost:3000/foo/bar/jasdf.oop.foo.css
                 var last_split_iterator: std.mem.SplitBackwardsIterator(u8, .scalar) = std.mem.splitBackwardsScalar(u8, path, '.');
                 const extension: []const u8 = last_split_iterator.first();
                 if (std.mem.eql(u8, extension, "js")) {
@@ -97,9 +73,6 @@ pub fn WebServer() type {
                 }
             }
             try response.headers.append("Content-Type", content_type);
-            //
-            //
-            //
 
             if (file_content) |file| {
                 const len = try std.fmt.allocPrint(options.allocator, "{any}", .{file.len});
