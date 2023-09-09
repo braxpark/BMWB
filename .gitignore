@@ -1,4 +1,6 @@
 zig-cache/
 
-src/pages/
-src/styles/
+pages/*
+scripts/*
+styles*
+
