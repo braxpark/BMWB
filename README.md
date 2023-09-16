@@ -10,3 +10,9 @@ Place your index.html files in the pages directory. You can create sub-directori
 <p>Any stylesheets linked from any index.html should be kept in the styles directory.</p>
 <br>
 <p>Any scripts linked from any index.html should be kept in the scripts directory.</p>
+
+<h3>
+  TODO: <br>
+  JSX compatibility <br>
+  Hot Reload <br>
+</h3>
