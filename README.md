@@ -20,4 +20,5 @@ To run, run the command `zig build run` and a server will run on the default por
   Command arg for server port <br>
   JSX compatibility <br>
   Hot Reload <br>
+  Vercel compatibility(?) <br>
 </p>
