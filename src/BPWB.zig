@@ -7,7 +7,7 @@ pub const RunMode = enum { Local, Prod };
 
 pub const ServerOptions = struct {
     port: u16 = 3000,
-    address: []const u8 = "127.0.0.1", // never use "localhost"
+    address: []const u8 = "0.0.0.0", // never use "localhost"
     allocator: std.mem.Allocator = undefined,
     run_mode: RunMode = RunMode.Local,
 };
